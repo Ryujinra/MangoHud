@@ -35,8 +35,10 @@ vklayer_files = files(
   'overlay.cpp',
   'overlay_params.c',
   'font_unispace.c',
+  'nvctrl.cpp',
 )
 
+lib_xnvctrl = cc.find_library('XNVCtrl')
 dep_nvml = cc.find_library('nvidia-ml', required: false)
 if dep_nvml.found()
   vklayer_files += 'nvml.c'
@@ -66,7 +68,8 @@ vklayer_mesa_overlay = shared_library(
     libimgui_core_dep, 
     dep_dl,
     dep_pthread,
-    dep_nvml],
+    dep_nvml,
+    lib_xnvctrl],
   include_directories : inc_common,
   link_args : cc.get_supported_link_arguments(['-Wl,-Bsymbolic-functions', '-Wl,-z,relro']),
   install : true
