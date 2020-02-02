@@ -34,7 +34,6 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 //#include "errors.h"
-#include <GL/gl.h>
 #include "hash.h"
 #include "../util/hash_table.h"
 
@@ -104,7 +103,7 @@ _mesa_DeleteHashTable(struct _mesa_HashTable *table)
  * \sa _mesa_HashLookup
  */
 static inline void *
-_mesa_HashLookup_unlocked(struct _mesa_HashTable *table, GLuint key)
+_mesa_HashLookup_unlocked(struct _mesa_HashTable *table, uint32_t key)
 {
    const struct hash_entry *entry;
 
@@ -133,7 +132,7 @@ _mesa_HashLookup_unlocked(struct _mesa_HashTable *table, GLuint key)
  * \return pointer to user's data or NULL if key not in table
  */
 void *
-_mesa_HashLookup(struct _mesa_HashTable *table, GLuint key)
+_mesa_HashLookup(struct _mesa_HashTable *table, uint32_t key)
 {
    void *res;
    _mesa_HashLockMutex(table);
@@ -155,14 +154,14 @@ _mesa_HashLookup(struct _mesa_HashTable *table, GLuint key)
  * \return pointer to user's data or NULL if key not in table
  */
 void *
-_mesa_HashLookupLocked(struct _mesa_HashTable *table, GLuint key)
+_mesa_HashLookupLocked(struct _mesa_HashTable *table, uint32_t key)
 {
    return _mesa_HashLookup_unlocked(table, key);
 }
 
 
 static inline void
-_mesa_HashInsert_unlocked(struct _mesa_HashTable *table, GLuint key, void *data)
+_mesa_HashInsert_unlocked(struct _mesa_HashTable *table, uint32_t key, void *data)
 {
    uint32_t hash = uint_hash(key);
    struct hash_entry *entry;
@@ -198,7 +197,7 @@ _mesa_HashInsert_unlocked(struct _mesa_HashTable *table, GLuint key, void *data)
  * \param data pointer to user data.
  */
 void
-_mesa_HashInsertLocked(struct _mesa_HashTable *table, GLuint key, void *data)
+_mesa_HashInsertLocked(struct _mesa_HashTable *table, uint32_t key, void *data)
 {
    _mesa_HashInsert_unlocked(table, key, data);
 }
@@ -213,7 +212,7 @@ _mesa_HashInsertLocked(struct _mesa_HashTable *table, GLuint key, void *data)
  * \param data pointer to user data.
  */
 void
-_mesa_HashInsert(struct _mesa_HashTable *table, GLuint key, void *data)
+_mesa_HashInsert(struct _mesa_HashTable *table, uint32_t key, void *data)
 {
    _mesa_HashLockMutex(table);
    _mesa_HashInsert_unlocked(table, key, data);
@@ -231,7 +230,7 @@ _mesa_HashInsert(struct _mesa_HashTable *table, GLuint key, void *data)
  * key and unlinks it.
  */
 static inline void
-_mesa_HashRemove_unlocked(struct _mesa_HashTable *table, GLuint key)
+_mesa_HashRemove_unlocked(struct _mesa_HashTable *table, uint32_t key)
 {
    struct hash_entry *entry;
 
@@ -255,13 +254,13 @@ _mesa_HashRemove_unlocked(struct _mesa_HashTable *table, GLuint key)
 
 
 void
-_mesa_HashRemoveLocked(struct _mesa_HashTable *table, GLuint key)
+_mesa_HashRemoveLocked(struct _mesa_HashTable *table, uint32_t key)
 {
    _mesa_HashRemove_unlocked(table, key);
 }
 
 void
-_mesa_HashRemove(struct _mesa_HashTable *table, GLuint key)
+_mesa_HashRemove(struct _mesa_HashTable *table, uint32_t key)
 {
    _mesa_HashLockMutex(table);
    _mesa_HashRemove_unlocked(table, key);
@@ -279,12 +278,12 @@ _mesa_HashRemove(struct _mesa_HashTable *table, GLuint key)
  */
 void
 _mesa_HashDeleteAll(struct _mesa_HashTable *table,
-                    void (*callback)(GLuint key, void *data, void *userData),
+                    void (*callback)(uint32_t key, void *data, void *userData),
                     void *userData)
 {
    assert(callback);
    _mesa_HashLockMutex(table);
-   table->InDeleteAll = GL_TRUE;
+   table->InDeleteAll = 1;
    hash_table_foreach(table->ht, entry) {
       callback((uintptr_t)entry->key, entry->data, userData);
       _mesa_hash_table_remove(table->ht, entry);
@@ -293,7 +292,7 @@ _mesa_HashDeleteAll(struct _mesa_HashTable *table,
       callback(DELETED_KEY_VALUE, table->deleted_key_data, userData);
       table->deleted_key_data = NULL;
    }
-   table->InDeleteAll = GL_FALSE;
+   table->InDeleteAll = 0;
    _mesa_HashUnlockMutex(table);
 }
 
@@ -307,7 +306,7 @@ _mesa_HashDeleteAll(struct _mesa_HashTable *table,
  */
 static void
 hash_walk_unlocked(const struct _mesa_HashTable *table,
-                   void (*callback)(GLuint key, void *data, void *userData),
+                   void (*callback)(uint32_t key, void *data, void *userData),
                    void *userData)
 {
    assert(table);
@@ -323,7 +322,7 @@ hash_walk_unlocked(const struct _mesa_HashTable *table,
 
 void
 _mesa_HashWalk(const struct _mesa_HashTable *table,
-               void (*callback)(GLuint key, void *data, void *userData),
+               void (*callback)(uint32_t key, void *data, void *userData),
                void *userData)
 {
    /* cast-away const */
@@ -336,14 +335,14 @@ _mesa_HashWalk(const struct _mesa_HashTable *table,
 
 void
 _mesa_HashWalkLocked(const struct _mesa_HashTable *table,
-               void (*callback)(GLuint key, void *data, void *userData),
+               void (*callback)(uint32_t key, void *data, void *userData),
                void *userData)
 {
    hash_walk_unlocked(table, callback, userData);
 }
 
 static void
-debug_print_entry(GLuint key, void *data, void *userData)
+debug_print_entry(uint32_t key, void *data, void *userData)
 {
    //_mesa_debug(NULL, "%u %p\n", key, data);
 }
@@ -375,19 +374,19 @@ _mesa_HashPrint(const struct _mesa_HashTable *table)
  * the adjacent key. Otherwise do a full search for a free key block in the
  * allowable key range.
  */
-GLuint
-_mesa_HashFindFreeKeyBlock(struct _mesa_HashTable *table, GLuint numKeys)
+uint32_t
+_mesa_HashFindFreeKeyBlock(struct _mesa_HashTable *table, uint32_t numKeys)
 {
-   const GLuint maxKey = ~((GLuint) 0) - 1;
+   const uint32_t maxKey = ~((uint32_t) 0) - 1;
    if (maxKey - numKeys > table->MaxKey) {
       /* the quick solution */
       return table->MaxKey + 1;
    }
    else {
       /* the slow solution */
-      GLuint freeCount = 0;
-      GLuint freeStart = 1;
-      GLuint key;
+      uint32_t freeCount = 0;
+      uint32_t freeStart = 1;
+      uint32_t key;
       for (key = 1; key != maxKey; key++) {
 	 if (_mesa_HashLookup_unlocked(table, key)) {
 	    /* darn, this key is already in use */
@@ -411,10 +410,10 @@ _mesa_HashFindFreeKeyBlock(struct _mesa_HashTable *table, GLuint numKeys)
 /**
  * Return the number of entries in the hash table.
  */
-GLuint
+uint32_t
 _mesa_HashNumEntries(const struct _mesa_HashTable *table)
 {
-   GLuint count = 0;
+   uint32_t count = 0;
 
    if (table->deleted_key_data)
       count++;

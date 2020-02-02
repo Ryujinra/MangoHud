@@ -33,8 +33,6 @@
 
 
 #include <stdbool.h>
-#include <GL/gl.h>
-//#include "imports.h"
 #include "../c11/threads.h"
 
 /**********************************************************************/
@@ -49,20 +47,20 @@
 /*@}*/
 
 /**
- * Magic GLuint object name that gets stored outside of the struct hash_table.
+ * Magic uint32_t object name that gets stored outside of the struct hash_table.
  *
  * The hash table needs a particular pointer to be the marker for a key that
  * was deleted from the table, along with NULL for the "never allocated in the
- * table" marker.  Legacy GL allows any GLuint to be used as a GL object name,
- * and we use a 1:1 mapping from GLuints to key pointers, so we need to be
- * able to track a GLuint that happens to match the deleted key outside of
+ * table" marker.  Legacy GL allows any uint32_t to be used as a GL object name,
+ * and we use a 1:1 mapping from uint32_ts to key pointers, so we need to be
+ * able to track a uint32_t that happens to match the deleted key outside of
  * struct hash_table.  We tell the hash table to use "1" as the deleted key
  * value, so that we test the deleted-key-in-the-table path as best we can.
  */
 #define DELETED_KEY_VALUE 1
 
 /** @{
- * Mapping from our use of GLuint as both the key and the hash value to the
+ * Mapping from our use of uint32_t as both the key and the hash value to the
  * hash_table.h API
  *
  * There exist many integer hash functions, designed to avoid collisions when
@@ -87,7 +85,7 @@ uint_key_compare(const void *a, const void *b)
 }
 
 static inline uint32_t
-uint_hash(GLuint id)
+uint_hash(uint32_t id)
 {
    return id;
 }
@@ -99,7 +97,7 @@ uint_key_hash(const void *key)
 }
 
 static inline void *
-uint_key(GLuint id)
+uint_key(uint32_t id)
 {
    return (void *)(uintptr_t) id;
 }
@@ -110,9 +108,9 @@ uint_key(GLuint id)
  */
 struct _mesa_HashTable {
    struct hash_table *ht;
-   GLuint MaxKey;                        /**< highest key inserted so far */
+   uint32_t MaxKey;                        /**< highest key inserted so far */
    mtx_t Mutex;                          /**< mutual exclusion lock */
-   GLboolean InDeleteAll;                /**< Debug check */
+   bool InDeleteAll;                /**< Debug check */
    /** Value that would be in the table for DELETED_KEY_VALUE. */
    void *deleted_key_data;
 };
@@ -121,11 +119,11 @@ extern struct _mesa_HashTable *_mesa_NewHashTable(void);
 
 extern void _mesa_DeleteHashTable(struct _mesa_HashTable *table);
 
-extern void *_mesa_HashLookup(struct _mesa_HashTable *table, GLuint key);
+extern void *_mesa_HashLookup(struct _mesa_HashTable *table, uint32_t key);
 
-extern void _mesa_HashInsert(struct _mesa_HashTable *table, GLuint key, void *data);
+extern void _mesa_HashInsert(struct _mesa_HashTable *table, uint32_t key, void *data);
 
-extern void _mesa_HashRemove(struct _mesa_HashTable *table, GLuint key);
+extern void _mesa_HashRemove(struct _mesa_HashTable *table, uint32_t key);
 
 /**
  * Lock the hash table mutex.
@@ -156,33 +154,33 @@ _mesa_HashUnlockMutex(struct _mesa_HashTable *table)
    mtx_unlock(&table->Mutex);
 }
 
-extern void *_mesa_HashLookupLocked(struct _mesa_HashTable *table, GLuint key);
+extern void *_mesa_HashLookupLocked(struct _mesa_HashTable *table, uint32_t key);
 
 extern void _mesa_HashInsertLocked(struct _mesa_HashTable *table,
-                                   GLuint key, void *data);
+                                   uint32_t key, void *data);
 
-extern void _mesa_HashRemoveLocked(struct _mesa_HashTable *table, GLuint key);
+extern void _mesa_HashRemoveLocked(struct _mesa_HashTable *table, uint32_t key);
 
 extern void
 _mesa_HashDeleteAll(struct _mesa_HashTable *table,
-                    void (*callback)(GLuint key, void *data, void *userData),
+                    void (*callback)(uint32_t key, void *data, void *userData),
                     void *userData);
 
 extern void
 _mesa_HashWalk(const struct _mesa_HashTable *table,
-               void (*callback)(GLuint key, void *data, void *userData),
+               void (*callback)(uint32_t key, void *data, void *userData),
                void *userData);
 
 extern void
 _mesa_HashWalkLocked(const struct _mesa_HashTable *table,
-                     void (*callback)(GLuint key, void *data, void *userData),
+                     void (*callback)(uint32_t key, void *data, void *userData),
                      void *userData);
 
 extern void _mesa_HashPrint(const struct _mesa_HashTable *table);
 
-extern GLuint _mesa_HashFindFreeKeyBlock(struct _mesa_HashTable *table, GLuint numKeys);
+extern uint32_t _mesa_HashFindFreeKeyBlock(struct _mesa_HashTable *table, uint32_t numKeys);
 
-extern GLuint
+extern uint32_t
 _mesa_HashNumEntries(const struct _mesa_HashTable *table);
 
 extern void _mesa_test_hash_functions(void);
