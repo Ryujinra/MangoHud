@@ -9,6 +9,9 @@
 #include <algorithm> 
 #include <cctype>
 #include <locale>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -95,7 +98,12 @@ static bool find_folder(const char* root, const char* prefix, std::string& dest)
     return false;
 }
 
-static std::vector<std::string> ls(const char* root, int d_type = DT_DIR)
+static bool find_folder(const std::string& root, const std::string& prefix, std::string& dest)
+{
+    return find_folder(root.c_str(), prefix, dest);
+}
+
+static std::vector<std::string> ls(const char* root, const char* prefix = nullptr, int d_type = DT_DIR)
 {
     std::vector<std::string> list;
     struct dirent* dp;
@@ -108,12 +116,38 @@ static std::vector<std::string> ls(const char* root, int d_type = DT_DIR)
     }
 
     while ((dp = readdir(dirp))) {
-        if (dp->d_type == d_type)
+        if (dp->d_type == d_type) {
+            if (prefix && !strcmp(dp->d_name, prefix))
+                continue;
             list.push_back(dp->d_name);
+        }
     }
 
     closedir(dirp);
     return list;
+}
+
+static bool file_exists(const std::string& path)
+{
+    struct stat s;
+    return !stat(path.c_str(), &s) && !S_ISDIR(s.st_mode);
+}
+
+static bool dir_exists(const std::string& path)
+{
+    struct stat s;
+    return !stat(path.c_str(), &s) && S_ISDIR(s.st_mode);
+}
+
+static bool try_stoi(int& val, const std::string& str, std::size_t* pos = 0, int base = 10)
+{
+    try {
+        val = std::stoi(str, pos, base);
+        return true;
+    } catch (std::invalid_argument& e) {
+        std::cerr << __func__ << ": invalid argument: '" << str << "'" << std::endl;
+    }
+    return false;
 }
 
 #pragma GCC diagnostic pop
