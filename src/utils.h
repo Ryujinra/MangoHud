@@ -87,7 +87,7 @@ static bool find_folder(const char* root, const char* prefix, std::string& dest)
     }
 
     while ((dp = readdir(dirp))) {
-        if (dp->d_type == DT_DIR && starts_with(dp->d_name, prefix)) {
+        if ((dp->d_type == DT_LNK || dp->d_type == DT_DIR) && starts_with(dp->d_name, prefix)) {
             dest = dp->d_name;
             closedir(dirp);
             return true;
@@ -100,7 +100,7 @@ static bool find_folder(const char* root, const char* prefix, std::string& dest)
 
 static bool find_folder(const std::string& root, const std::string& prefix, std::string& dest)
 {
-    return find_folder(root.c_str(), prefix, dest);
+    return find_folder(root.c_str(), prefix.c_str(), dest);
 }
 
 static std::vector<std::string> ls(const char* root, const char* prefix = nullptr, int d_type = DT_DIR)
@@ -117,7 +117,7 @@ static std::vector<std::string> ls(const char* root, const char* prefix = nullpt
 
     while ((dp = readdir(dirp))) {
         if (dp->d_type == DT_LNK || dp->d_type == d_type) {
-            if (prefix && !strcmp(dp->d_name, prefix))
+            if (prefix && !starts_with(dp->d_name, prefix))
                 continue;
             list.push_back(dp->d_name);
         }
