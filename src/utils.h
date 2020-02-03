@@ -116,7 +116,7 @@ static std::vector<std::string> ls(const char* root, const char* prefix = nullpt
     }
 
     while ((dp = readdir(dirp))) {
-        if (dp->d_type == d_type) {
+        if (dp->d_type == DT_LNK || dp->d_type == d_type) {
             if (prefix && !strcmp(dp->d_name, prefix))
                 continue;
             list.push_back(dp->d_name);
